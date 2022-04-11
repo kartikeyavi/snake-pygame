@@ -5,13 +5,6 @@ Made with PyGame
 
 from pickle import TRUE
 import pygame, sys, time, random, json, os
-from math import ceil, floor
-
-def ceil_to_tens(x):
-    return int(ceil(x / 10.0)) * 10
-def floor_to_tens(x):
-    return int(floor(x / 10.0)) * 10
-
 
 # Difficulty settings
 # Easy      ->  10
