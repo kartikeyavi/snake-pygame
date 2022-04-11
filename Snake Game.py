@@ -3,7 +3,14 @@ Snake Eater
 Made with PyGame
 """
 
-import pygame, sys, time, random
+from pickle import TRUE
+import pygame, sys, time, random, json, os
+from math import ceil, floor
+
+def ceil_to_tens(x):
+    return int(ceil(x / 10.0)) * 10
+def floor_to_tens(x):
+    return int(floor(x / 10.0)) * 10
 
 
 # Difficulty settings
@@ -40,6 +47,7 @@ white = pygame.Color(255, 255, 255)
 red = pygame.Color(255, 0, 0)
 green = pygame.Color(0, 255, 0)
 blue = pygame.Color(0, 0, 255)
+yellow = pygame.Color(255, 255, 0)
 
 
 # FPS (frames per second) controller
@@ -58,7 +66,6 @@ change_to = direction
 
 score = 0
 
-
 # Game Over
 def game_over():
     my_font = pygame.font.SysFont('times new roman', 90)
@@ -73,7 +80,6 @@ def game_over():
     pygame.quit()
     sys.exit()
 
-
 # Score
 def show_score(choice, color, font, size):
     score_font = pygame.font.SysFont(font, size)
@@ -86,6 +92,15 @@ def show_score(choice, color, font, size):
     game_window.blit(score_surface, score_rect)
     # pygame.display.flip()
 
+joysticks = []
+for i in range(pygame.joystick.get_count()):
+    joysticks.append(pygame.joystick.Joystick(i))
+for joystick in joysticks:
+    joystick.init()
+
+with open(os.path.join("controller_keys.json"), 'r+') as file:
+    button_keys = json.load(file)
+analog_keys = {0:0, 1:0, 2:0, 3:0, 4:-1, 5: -1 }
 
 # Main logic
 while True:
@@ -93,6 +108,7 @@ while True:
         if event.type == pygame.QUIT:
             pygame.quit()
             sys.exit()
+
         # Whenever a key is pressed down
         elif event.type == pygame.KEYDOWN:
             # W -> Up; S -> Down; A -> Left; D -> Right
@@ -108,6 +124,40 @@ while True:
             if event.key == pygame.K_ESCAPE:
                 pygame.event.post(pygame.event.Event(pygame.QUIT))
 
+        elif event.type == pygame.JOYBUTTONDOWN:
+
+            if event.button == button_keys['left_arrow']:
+                change_to = 'LEFT'
+            elif event.button == button_keys['right_arrow']:
+                change_to = 'RIGHT'
+            elif event.button == button_keys['down_arrow']:
+                change_to = 'DOWN'
+            elif event.button == button_keys['up_arrow']:
+                change_to = 'UP'
+
+          
+        elif event.type == pygame.JOYAXISMOTION:
+            analog_keys[event.axis] = event.value
+            # print(analog_keys)
+            # Horizontal Analog
+            if abs(analog_keys[0]) > .4:
+ 
+                if analog_keys[0] < .7:
+                    change_to = 'LEFT'
+                elif analog_keys[0] > .7:
+                    change_to = 'RIGHT'
+
+            # Vertical Analog
+            elif abs(analog_keys[1]) > .4:
+
+                if analog_keys[1] < .7:
+                    change_to = 'UP'
+
+                elif analog_keys[1] > .7:
+                  change_to = 'DOWN'
+
+                else:
+                    pass    
     # Making sure the snake cannot move in the opposite direction instantaneously
     if change_to == 'UP' and direction != 'DOWN':
         direction = 'UP'
@@ -117,8 +167,7 @@ while True:
         direction = 'LEFT'
     if change_to == 'RIGHT' and direction != 'LEFT':
         direction = 'RIGHT'
-
-    # Moving the snake
+        
     if direction == 'UP':
         snake_pos[1] -= 10
     if direction == 'DOWN':
@@ -146,11 +195,11 @@ while True:
     for pos in snake_body:
         # Snake body
         # .draw.rect(play_surface, color, xy-coordinate)
-        # xy-coordinate -> .Rect(x, y, size_x, size_y)
-        pygame.draw.rect(game_window, green, pygame.Rect(pos[0], pos[1], 10, 10))
+        # xy-coordinate -> .Rect(x, y, size_x, size_y
+        pygame.draw.rect(game_window, blue, pygame.Rect(pos[0], pos[1], 10, 10))
 
     # Snake food
-    pygame.draw.rect(game_window, white, pygame.Rect(food_pos[0], food_pos[1], 10, 10))
+    pygame.draw.rect(game_window, red, pygame.Rect(food_pos[0], food_pos[1], 10, 10))
 
     # Game Over conditions
     # Getting out of bounds
@@ -158,13 +207,16 @@ while True:
         game_over()
     if snake_pos[1] < 0 or snake_pos[1] > frame_size_y-10:
         game_over()
+
+
+    show_score(1, white, 'consolas', 20)
+    # Refresh game screen
+
     # Touching the snake body
     for block in snake_body[1:]:
         if snake_pos[0] == block[0] and snake_pos[1] == block[1]:
             game_over()
 
-    show_score(1, white, 'consolas', 20)
-    # Refresh game screen
     pygame.display.update()
     # Refresh rate
     fps_controller.tick(difficulty)
